@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from collections import Counter
 from sklearn import tree
+import argparse
 
 class DT:
     """
@@ -123,15 +124,19 @@ class DT:
         bestXIndex = -1
         bestSplitPoint = -1
         bestLoss = float("inf")
+        # print (x.shape, y.shape)
         for i in range(nx):
             xSortNdx = np.argsort(x[:,i])
             xSort = x[xSortNdx,i]
-            ySort = y[xSortNdx]
+            ySort = y[xSortNdx,]
+            # print (xSort.shape, ySort.shape)
             if regressionTree:
-                z = DT._calculateRegressionLoss( xSort, ySort )
+                z = DT._calculateRegressionLoss( xSort, ySort)
             else:
                 z = DT._calculateClassificationGiniLoss( xSort, ySort)
             l = np.min(z)
+            # print (len(xSort))
+            # print (z)
             if l < bestLoss:
                 argmin_z = np.argmin(z)
                 if argmin_z + 1 < len(xSort):
@@ -150,10 +155,10 @@ class DT:
         N = x.shape[0]
         l = np.zeros(N-1)
         for i in range(1, N):
-            mean1 = np.mean(y[0:i])
-            mean2 = np.mean(y[i:])
-            l1 = np.sum(np.square(y[0:i] - mean1))
-            l2 = np.sum(np.square(y[i:] - mean2))
+            mean1 = np.mean(y[0:i,])
+            mean2 = np.mean(y[i:,])
+            l1 = np.sum(np.square(y[0:i,] - mean1))
+            l2 = np.sum(np.square(y[i:,] - mean2))
             l[i-1] = l1 + l2
         return l
     
@@ -180,7 +185,7 @@ class DT:
             l[i-1] = gini1 + gini2
         return l
 
-def main():
+def main(nsize:int, yscaler:float):
     """
     Main function to demonstrate the usage of a custom decision tree (DT) and compare it with sklearn's DecisionTreeRegressor and DecisionTreeClassifier.
     The function performs the following steps:
@@ -195,9 +200,10 @@ def main():
     """
     # Generate some test data and test the tree
     np.random.seed(0)
-    x = np.random.uniform(size=(10,1))
-    y = x + np.random.randn(10,1)*0.1
-    plt.figure(figsize=(20,10))
+    x = np.random.uniform(size=(nsize,1))
+    print (x.tolist())
+    y = x + np.random.randn(nsize,1)*yscaler
+    plt.figure(figsize=(9,5))
     plt.plot(x,y, 'ro')
     plt.show()
 
@@ -206,23 +212,27 @@ def main():
     dt.fit(x,y)
 
     # Print the tree
+    print ("Printing the custom tree!")
     dt.print()
 
     # Predict the tree
+    print ("Printing the custom prediction!")
     print(f"Predict={dt.predict(np.array([0.5])):.4}")
 
     # Now lets compare with tree implementation of sklearn
     clf = tree.DecisionTreeRegressor()
     clf = clf.fit(x, y)
+    print ("Plotting scikit tree")
     tree.plot_tree(clf)
     plt.show()
     print(f"Predict={clf.predict(np.array([0.5]).reshape(1,1))}")
 
     # Generate some test data and test the tree for classification
     np.random.seed(0)
-    x= np.random.uniform(size=(10,1))
+    x= np.random.uniform(size=(nsize,1))
     y = np.array([ 1 if xi >= 0.5 else 0 for xi in x])
-    plt.figure(figsize=(20,10))
+    plt.figure(figsize=(9,5))
+    print ("Plotting binary labeled data")
     plt.plot(x,y, 'ro')
     plt.show()
 
@@ -231,6 +241,7 @@ def main():
     dtc.fit(x,y)
 
     # Print the tree
+    print ("Plotting custom plot!")
     dtc.print()
 
     # Predict the tree
@@ -240,8 +251,17 @@ def main():
     clf = tree.DecisionTreeClassifier(random_state=0)
     clf = clf.fit(x, y)
     tree.plot_tree(clf)
+    print ("Plotting scikit classification plot!")
     plt.show()
-    print(f"Predict={clf.predict(np.array([0.5]).reshape(1,1))}")
+    print(f"Predict={clf.predict(np.array([0.6]).reshape(1,1))}")
 
 if __name__ == "__main__":
-    main()
+    # Argument parser
+    parser = argparse.ArgumentParser(description="Decision Tree Example")
+    parser.add_argument('--nsize', type=int, default=10, help='Number of data points')
+    parser.add_argument('--yscaler', type=float, default=0.1, help='Scaler for y values')
+    args = parser.parse_args()
+
+    nsize = args.nsize
+    yscaler = args.yscaler
+    main(nsize, yscaler)
